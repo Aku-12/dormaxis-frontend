@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
+import PasswordStrengthMeter from '../components/auth/PasswordStrengthMeter';
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -56,8 +57,16 @@ const SignupPage = () => {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 12) {
+      newErrors.password = 'Password must be at least 12 characters';
+    } else if (!/[A-Z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter';
+    } else if (!/[a-z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one lowercase letter';
+    } else if (!/\d/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one number';
+    } else if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one special character';
     }
 
     if (!formData.confirmPassword) {
@@ -275,6 +284,8 @@ const SignupPage = () => {
                   </button>
                 </div>
                 {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
+                {/* Password Strength Meter */}
+                <PasswordStrengthMeter password={formData.password} showRequirements={true} />
               </div>
 
               {/* Confirm Password Field */}

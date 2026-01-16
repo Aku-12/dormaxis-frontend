@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authAPI } from '../api';
+import axiosClient from '../api/axios.client';
 
 const useAuthStore = create(
   persist(
@@ -11,18 +12,36 @@ const useAuthStore = create(
       isAuthenticated: false,
       loading: false,
       error: null,
+      // MFA state
+      mfaRequired: false,
+      mfaTempToken: null,
+      mfaMethod: null,
 
       // Actions
       login: async (credentials) => {
-        set({ loading: true, error: null });
+        set({ loading: true, error: null, mfaRequired: false });
         try {
           const response = await authAPI.login(credentials);
+          
+          // Check if MFA is required
+          if (response.mfaRequired) {
+            set({
+              mfaRequired: true,
+              mfaTempToken: response.data.tempToken,
+              mfaMethod: response.data.mfaMethod || 'totp',
+              loading: false,
+            });
+            return { success: true, mfaRequired: true };
+          }
+
           if (response.success) {
             set({
               user: response.data.user,
               token: response.data.token,
               isAuthenticated: true,
               loading: false,
+              mfaRequired: false,
+              mfaTempToken: null,
             });
             return { success: true };
           } else {
@@ -34,6 +53,83 @@ const useAuthStore = create(
           set({ error: errorMessage, loading: false });
           return { success: false, error: errorMessage };
         }
+      },
+
+      // Verify MFA token
+      verifyMFA: async (mfaToken) => {
+        set({ loading: true, error: null });
+        const { mfaTempToken } = get();
+        
+        try {
+          const response = await axiosClient.post('/mfa/verify', {
+            tempToken: mfaTempToken,
+            mfaToken,
+          });
+
+          if (response.data.success) {
+            set({
+              user: response.data.data.user,
+              token: response.data.data.token,
+              isAuthenticated: true,
+              loading: false,
+              mfaRequired: false,
+              mfaTempToken: null,
+            });
+            return { success: true };
+          } else {
+            set({ error: response.data.error || 'Invalid MFA code', loading: false });
+            return { success: false, error: response.data.error };
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.error || 'Invalid MFA code';
+          set({ error: errorMessage, loading: false });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      // Use backup code
+      useBackupCode: async (backupCode) => {
+        set({ loading: true, error: null });
+        const { mfaTempToken } = get();
+        
+        try {
+          const response = await axiosClient.post('/mfa/use-backup', {
+            tempToken: mfaTempToken,
+            backupCode,
+          });
+
+          if (response.data.success) {
+            set({
+              user: response.data.data.user,
+              token: response.data.data.token,
+              isAuthenticated: true,
+              loading: false,
+              mfaRequired: false,
+              mfaTempToken: null,
+            });
+            return { 
+              success: true, 
+              remainingCodes: response.data.data.remainingBackupCodes 
+            };
+          } else {
+            set({ error: response.data.error || 'Invalid backup code', loading: false });
+            return { success: false, error: response.data.error };
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.error || 'Invalid backup code';
+          set({ error: errorMessage, loading: false });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      // Cancel MFA
+      cancelMFA: () => {
+        set({
+          mfaRequired: false,
+          mfaTempToken: null,
+          mfaMethod: null,
+          error: null,
+        });
       },
 
       register: async (userData) => {
@@ -65,6 +161,8 @@ const useAuthStore = create(
             token: null,
             isAuthenticated: false,
             error: null,
+            mfaRequired: false,
+            mfaTempToken: null,
           });
         }
       },
@@ -103,3 +201,4 @@ const useAuthStore = create(
 );
 
 export default useAuthStore;
+

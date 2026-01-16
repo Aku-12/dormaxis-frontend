@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
 
   // Dorms
   DORMS: '/dorms',
+  DORMS_FILTERS: '/dorms/filters',
   DORM_BY_ID: (id) => `/dorms/${id}`,
 
   // Auth
@@ -18,6 +19,12 @@ export const API_ENDPOINTS = {
   AUTH_LOGIN: '/auth/login',
   AUTH_PROFILE: '/auth/profile',
   AUTH_LOGOUT: '/auth/logout',
+
+  // Wishlist
+  WISHLIST: '/wishlist',
+  WISHLIST_ADD: (dormId) => `/wishlist/${dormId}`,
+  WISHLIST_REMOVE: (dormId) => `/wishlist/${dormId}`,
+  WISHLIST_CHECK: (dormId) => `/wishlist/check/${dormId}`,
 
   // Admin
   ADMIN: '/admin',

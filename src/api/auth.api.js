@@ -42,4 +42,37 @@ export const authAPI = {
     const response = await axiosClient.post(API_ENDPOINTS.AUTH_LOGOUT);
     return response.data;
   },
+
+  /**
+   * Update user profile
+   * @param {Object} profileData - Profile data to update
+   * @returns {Promise} Response with updated user data
+   */
+  updateProfile: async (profileData) => {
+    const response = await axiosClient.put(API_ENDPOINTS.AUTH_UPDATE_PROFILE, profileData);
+    return response.data;
+  },
+
+  /**
+   * Upload user avatar
+   * @param {File} file - Image file to upload
+   * @returns {Promise} Response with avatar URL
+   */
+  uploadAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    // Don't set Content-Type header - let axios set it automatically with boundary
+    const response = await axiosClient.post(API_ENDPOINTS.AUTH_UPLOAD_AVATAR, formData);
+    return response.data;
+  },
+
+  /**
+   * Delete user avatar
+   * @returns {Promise} Response with success message
+   */
+  deleteAvatar: async () => {
+    const response = await axiosClient.delete(API_ENDPOINTS.AUTH_DELETE_AVATAR);
+    return response.data;
+  },
 };

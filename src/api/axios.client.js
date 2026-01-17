@@ -4,6 +4,7 @@ import { API_CONFIG } from '../config/api.config';
 const axiosClient = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
+  withCredentials: true, // Include cookies in cross-origin requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -23,6 +24,12 @@ axiosClient.interceptors.request.use(
         config.headers['x-user-role'] = state.user.role;
       }
     }
+
+    // Remove Content-Type for FormData to let browser set it with boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => {

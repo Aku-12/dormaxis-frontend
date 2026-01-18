@@ -19,6 +19,9 @@ export const API_ENDPOINTS = {
   AUTH_LOGIN: '/auth/login',
   AUTH_PROFILE: '/auth/profile',
   AUTH_LOGOUT: '/auth/logout',
+  AUTH_UPDATE_PROFILE: '/auth/profile',
+  AUTH_UPLOAD_AVATAR: '/auth/avatar',
+  AUTH_DELETE_AVATAR: '/auth/avatar',
 
   // Wishlist
   WISHLIST: '/wishlist',

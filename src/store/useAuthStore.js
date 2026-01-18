@@ -188,6 +188,14 @@ const useAuthStore = create(
       clearError: () => {
         set({ error: null });
       },
+
+      updateUser: (userData) => {
+        set({ user: { ...get().user, ...userData } });
+      },
+
+      setUser: (user) => {
+        set({ user });
+      },
     }),
     {
       name: 'auth-storage', // localStorage key

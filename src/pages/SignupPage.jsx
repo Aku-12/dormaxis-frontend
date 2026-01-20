@@ -108,32 +108,44 @@ const SignupPage = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Image with Text */}
-      <div className="hidden md:block md:w-1/2 relative bg-gradient-to-br from-gray-200 to-gray-300">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-8xl">🏠</div>
-        </div>
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-        <div className="relative z-10 h-full flex flex-col justify-center px-16 text-white">
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-12">
-              <div className="w-10 h-10 bg-white bg-opacity-20 backdrop-blur-sm rounded-lg flex items-center justify-center text-white text-xl">
-                🏠
-              </div>
-              <span className="text-xl font-bold">Dorm Axis</span>
+      {/* Left Side - Image with Text Overlay */}
+      <div className="hidden lg:flex lg:w-1/2 relative">
+        {/* Background Image */}
+        <img
+          src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=1600&fit=crop&q=80"
+          alt="Cozy living room"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/30"></div>
+
+        {/* Content */}
+        <div className="relative z-10 h-full flex flex-col justify-start pt-8 px-10">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-12">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center shadow-lg">
+              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3L4 9v12h16V9l-8-6zm0 2.5L18 10v9H6v-9l6-4.5z"/>
+                <rect x="10" y="14" width="4" height="5" fill="currentColor"/>
+              </svg>
             </div>
+            <span className="text-lg font-bold text-white">Dorm Axis</span>
           </div>
-          <h1 className="text-5xl font-bold leading-tight mb-6">
+
+          {/* Heading */}
+          <h1 className="text-3xl xl:text-4xl font-semibold leading-tight mb-4 text-white italic">
             Join thousands finding their perfect dorm
           </h1>
-          <p className="text-lg text-gray-200 leading-relaxed max-w-md">
-            Transforming the way you search for dorms by bringing clarity, comfort, and convenience to your dorm hunting experience.
+
+          {/* Description */}
+          <p className="text-base text-white/80 leading-relaxed max-w-md">
+            Transforming the way you search for dorms by bringing clarity, comfort, and convenience to your dorm journey.
           </p>
         </div>
       </div>
 
       {/* Right Side - Signup Form */}
-      <div className="w-full md:w-1/2 flex flex-col bg-white">
+      <div className="w-full lg:w-1/2 flex flex-col bg-white overflow-y-auto">
         {/* Form Container */}
         <div className="flex-1 flex items-center justify-center px-8 py-12">
           <div className="w-full max-w-md">

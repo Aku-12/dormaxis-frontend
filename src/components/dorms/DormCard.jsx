@@ -2,12 +2,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useDormStore from '../../store/useDormStore';
 import useAuthStore from '../../store/useAuthStore';
+import { useToast } from '../common/Toast';
 
 const DormCard = ({ dorm }) => {
   const navigate = useNavigate();
   const { toggleWishlist, wishlist } = useDormStore();
   const { isAuthenticated } = useAuthStore();
-  
+  const toast = useToast();
+
   const isInWishlist = wishlist.includes(dorm._id);
 
   const handleWishlistClick = async (e) => {
@@ -16,7 +18,17 @@ const DormCard = ({ dorm }) => {
       navigate('/login');
       return;
     }
-    await toggleWishlist(dorm._id);
+    const wasInWishlist = isInWishlist;
+    const success = await toggleWishlist(dorm._id);
+    if (success) {
+      if (wasInWishlist) {
+        toast.success(`${dorm.name} removed from wishlist`);
+      } else {
+        toast.success(`${dorm.name} added to wishlist`);
+      }
+    } else {
+      toast.error('Failed to update wishlist');
+    }
   };
 
   const getBadge = () => {
@@ -42,8 +54,15 @@ const DormCard = ({ dorm }) => {
   // Default image if none provided
   const imageUrl = dorm.image || dorm.images?.[0] || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&h=300&fit=crop';
 
+  const handleCardClick = () => {
+    navigate(`/dorms/${dorm._id}`);
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group">
+    <div 
+      onClick={handleCardClick}
+      className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer"
+    >
       {/* Image Container */}
       <div className="relative h-48 overflow-hidden">
         <img
@@ -114,7 +133,10 @@ const DormCard = ({ dorm }) => {
             <span className="text-sm text-gray-500">/month</span>
           </div>
           <button
-            onClick={() => navigate(`/dorms/${dorm._id}`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/dorms/${dorm._id}`);
+            }}
             className="px-4 py-2 text-sm font-medium text-[#4A90B8] border border-[#4A90B8] rounded-lg hover:bg-[#4A90B8] hover:text-white transition-colors"
           >
             View Details

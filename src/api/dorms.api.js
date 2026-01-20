@@ -63,6 +63,42 @@ export const dormsAPI = {
   },
 };
 
+export const reviewsAPI = {
+  /**
+   * Get reviews for a dorm
+   * @param {string} dormId - Dorm ID
+   * @param {number} page - Page number
+   * @returns {Promise} Response with reviews and stats
+   */
+  getReviewsByDormId: async (dormId, page = 1, limit = 10) => {
+    const response = await axiosClient.get(API_ENDPOINTS.REVIEWS_BY_DORM(dormId), {
+      params: { page, limit }
+    });
+    return response.data;
+  },
+
+  /**
+   * Add a review for a dorm
+   * @param {string} dormId - Dorm ID
+   * @param {Object} reviewData - { rating, comment }
+   * @returns {Promise} Response with created review
+   */
+  addReview: async (dormId, reviewData) => {
+    const response = await axiosClient.post(API_ENDPOINTS.ADD_REVIEW(dormId), reviewData);
+    return response.data;
+  },
+
+  /**
+   * Delete a review
+   * @param {string} reviewId - Review ID
+   * @returns {Promise} Response with success message
+   */
+  deleteReview: async (reviewId) => {
+    const response = await axiosClient.delete(API_ENDPOINTS.DELETE_REVIEW(reviewId));
+    return response.data;
+  },
+};
+
 export const wishlistAPI = {
   /**
    * Get user's wishlist
@@ -103,3 +139,4 @@ export const wishlistAPI = {
     return response.data;
   },
 };
+

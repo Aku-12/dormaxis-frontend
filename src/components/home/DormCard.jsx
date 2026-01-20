@@ -1,6 +1,17 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import useDormStore from '../../store/useDormStore';
+import useAuthStore from '../../store/useAuthStore';
+import { useToast } from '../common/Toast';
 
 const DormCard = ({ dorm }) => {
+  const navigate = useNavigate();
+  const { toggleWishlist, wishlist } = useDormStore();
+  const { isAuthenticated } = useAuthStore();
+  const toast = useToast();
+
+  const isInWishlist = wishlist.includes(dorm._id);
+
   const getDefaultImage = (beds) => {
     if (beds === 1) return 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&h=400&fit=crop';
     if (beds === 2) return 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop';
@@ -9,8 +20,35 @@ const DormCard = ({ dorm }) => {
 
   const dormImage = dorm.image || getDefaultImage(dorm.beds);
 
+  const handleWishlistClick = async (e) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    const wasInWishlist = isInWishlist;
+    const success = await toggleWishlist(dorm._id);
+    if (success) {
+      if (wasInWishlist) {
+        toast.success(`${dorm.name} removed from wishlist`);
+      } else {
+        toast.success(`${dorm.name} added to wishlist`);
+      }
+    } else {
+      toast.error('Failed to update wishlist');
+    }
+  };
+
+  const handleViewClick = (e) => {
+    e.stopPropagation();
+    navigate(`/dorms/${dorm._id}`);
+  };
+
   return (
-    <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300">
+    <div
+      className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
+      onClick={() => navigate(`/dorms/${dorm._id}`)}
+    >
       <div className="h-40 relative group">
         <img
           src={dormImage}
@@ -26,9 +64,26 @@ const DormCard = ({ dorm }) => {
           )}
         </div>
         {/* Favorite Button */}
-        <button className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors">
-          <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        <button
+          onClick={handleWishlistClick}
+          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all duration-200 ${
+            isInWishlist
+              ? 'bg-red-500 text-white hover:bg-red-600'
+              : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-red-500'
+          }`}
+        >
+          <svg
+            className="w-4 h-4"
+            fill={isInWishlist ? "currentColor" : "none"}
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
           </svg>
         </button>
       </div>
@@ -54,12 +109,12 @@ const DormCard = ({ dorm }) => {
             <span className="text-lg font-bold text-[#4A90B8]">Rs. {dorm.price.toLocaleString()}</span>
             <span className="text-xs text-gray-500">/mo</span>
           </div>
-          <a
-            href={`#dorm-${dorm._id}`}
+          <button
+            onClick={handleViewClick}
             className="px-4 py-2 bg-[#4A90B8] text-white rounded-lg text-xs font-semibold hover:bg-[#3A7A9A] transition-colors"
           >
             View
-          </a>
+          </button>
         </div>
       </div>
     </div>

@@ -355,13 +355,13 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Right Side - Image */}
+      {/* Right Side - Room Image */}
       <div className="hidden md:block md:w-1/2 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400">
-          <div className="w-full h-full flex items-center justify-center text-8xl">
-            🏠
-          </div>
-        </div>
+        <img
+          src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200&h=1600&fit=crop&q=80"
+          alt="Modern living room"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
       </div>
 
       {/* Success Notification */}

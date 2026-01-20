@@ -64,7 +64,7 @@ const DormFilters = () => {
           <option value="all">All Types</option>
           {filterOptions.types.map((type) => (
             <option key={type} value={type}>
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+              {type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
             </option>
           ))}
         </select>

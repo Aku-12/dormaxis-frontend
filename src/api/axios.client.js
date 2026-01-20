@@ -47,6 +47,17 @@ axiosClient.interceptors.response.use(
     if (error.response) {
       // Server responded with error
       console.error('API Error:', error.response.data);
+      
+      // Handle 401 Unauthorized - token expired or invalid
+      if (error.response.status === 401) {
+        // Clear auth storage
+        localStorage.removeItem('auth-storage');
+        
+        // Redirect to login if not already there
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      }
     } else if (error.request) {
       // Request made but no response
       console.error('Network Error:', error.request);

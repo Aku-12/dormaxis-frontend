@@ -62,9 +62,14 @@ const Header = () => {
             </a>
           </li>
           <li>
-            <a href="#about" className="text-gray-700 hover:text-[#4A90B8] font-bold transition-colors">
+            <Link
+              to="/about"
+              className={`font-bold transition-colors ${
+                isActive('/about') ? 'text-[#4A90B8]' : 'text-gray-700 hover:text-[#4A90B8]'
+              }`}
+            >
               About Us
-            </a>
+            </Link>
           </li>
         </ul>
 

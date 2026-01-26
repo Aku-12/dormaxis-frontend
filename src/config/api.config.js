@@ -27,6 +27,16 @@ export const API_ENDPOINTS = {
   AUTH_UPDATE_PROFILE: '/auth/profile',
   AUTH_UPLOAD_AVATAR: '/auth/avatar',
   AUTH_DELETE_AVATAR: '/auth/avatar',
+  AUTH_SESSIONS: '/auth/sessions',
+
+  // MFA
+  MFA_STATUS: '/mfa/status',
+  MFA_SETUP: '/mfa/setup',
+  MFA_VERIFY_SETUP: '/mfa/verify-setup',
+  MFA_VERIFY: '/mfa/verify',
+  MFA_USE_BACKUP: '/mfa/use-backup',
+  MFA_DISABLE: '/mfa/disable',
+  MFA_BACKUP_CODES: '/mfa/backup-codes',
 
   // Wishlist
   WISHLIST: '/wishlist',
@@ -43,16 +53,9 @@ export const API_ENDPOINTS = {
   BOOKING_ADMIN_ALL: '/bookings/admin/all',
   BOOKING_ADMIN_STATUS: (id) => `/bookings/admin/${id}/status`,
 
-  // Payments - eSewa
-  PAYMENT_ESEWA_INITIATE: '/payments/esewa/initiate',
-  PAYMENT_ESEWA_VERIFY: '/payments/esewa/verify',
-  PAYMENT_ESEWA_STATUS: (bookingId) => `/payments/esewa/status/${bookingId}`,
-  PAYMENT_ESEWA_FAILURE: '/payments/esewa/failure',
-  
-  // Payments - Khalti
-  PAYMENT_KHALTI_INITIATE: '/payments/khalti/initiate',
-  PAYMENT_KHALTI_VERIFY: '/payments/khalti/verify',
-  PAYMENT_KHALTI_STATUS: (bookingId) => `/payments/khalti/status/${bookingId}`,
+  // Payments - Stripe
+  PAYMENT_CREATE_SESSION: '/payments/create-checkout-session',
+  PAYMENT_VERIFY: '/payments/verify-payment',
   
   // Payments - Common
   PAYMENT_DETAILS: (bookingId) => `/payments/${bookingId}`,

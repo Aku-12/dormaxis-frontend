@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Header, Footer, Loading, ErrorMessage } from '../components/common';
 import useAuthStore from '../store/useAuthStore';
-import { bookingAPI } from '../api';
+import { bookingAPI, paymentAPI } from '../api';
 import { API_CONFIG } from '../config/api.config';
 
 // Helper function to get full image URL
@@ -128,7 +128,7 @@ const BookingPage = () => {
     email: '',
     phone: '',
     numberOfOccupants: 1,
-    paymentMethod: 'esewa',
+    paymentMethod: 'stripe',
     termsAccepted: false
   });
 
@@ -165,6 +165,9 @@ const BookingPage = () => {
   // Fetch dorm and pricing data
   useEffect(() => {
     const fetchData = async () => {
+      // Double check authentication before making the call
+      if (!isAuthenticated) return;
+
       try {
         setLoading(true);
         const response = await bookingAPI.getBookingPreview(dormId);
@@ -173,6 +176,11 @@ const BookingPage = () => {
           setPricing(response.data.pricing);
         }
       } catch (err) {
+        // If unauthorized, redirect to login (session might have expired)
+        if (err.response?.status === 401) {
+          navigate('/login', { state: { from: `/booking/${dormId}` } });
+          return;
+        }
         console.error('Error fetching booking data:', err);
         setError('Failed to load booking information');
       } finally {
@@ -264,22 +272,20 @@ const BookingPage = () => {
       const bookingData = {
         dormId,
         ...formData,
-        promoCode: promoApplied ? promoCode : null
+        promoCode: promoApplied ? promoCode : null,
+        guests: formData.numberOfOccupants, // Use standard key expected by backend
+        totalAmount: pricing.totalAmount, // Ensure totalAmount is sent
+        discount: pricing.discount // Send discount if applied
       };
-      const response = await bookingAPI.createBooking(bookingData);
-      if (response.success) {
-        // Redirect to payment page for eSewa or Khalti payment
-        if (formData.paymentMethod === 'esewa' || formData.paymentMethod === 'khalti') {
-          navigate('/payment', { 
-            state: { 
-              bookingId: response.data._id,
-              paymentMethod: formData.paymentMethod 
-            } 
-          });
-        } else {
-          // For other payment methods, go to success page directly
-          navigate(`/booking/success/${response.data._id}`, { state: { booking: response.data } });
-        }
+      
+      // Use Stripe Checkout
+      const response = await paymentAPI.createStripeCheckoutSession(bookingData);
+      
+      if (response.success && response.url) {
+        // Redirect to Stripe
+        window.location.href = response.url;
+      } else {
+        setError('Failed to initiate payment session');
       }
     } catch (err) {
       console.error('Error creating booking:', err);
@@ -486,37 +492,20 @@ const BookingPage = () => {
               </div>
 
               <div className="flex flex-col gap-3 mb-5">
-                <label className="block cursor-pointer">
-                  <input type="radio" name="paymentMethod" value="esewa" checked={formData.paymentMethod === 'esewa'} onChange={handleInputChange} className="hidden" />
-                  <div className={`flex items-center gap-4 p-4 border-2 rounded-xl transition-all ${formData.paymentMethod === 'esewa' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                    <div className={`w-5 h-5 border-2 rounded-full flex-shrink-0 relative transition-all ${formData.paymentMethod === 'esewa' ? 'border-blue-500' : 'border-slate-300'}`}>
-                      {formData.paymentMethod === 'esewa' && <div className="absolute inset-1 bg-blue-500 rounded-full"></div>}
-                    </div>
-                    <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-bold text-xs">eSewa</span>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-800">Esewa</h4>
-                      <p className="text-xs text-slate-500">Pay with your digital wallet Esewa.</p>
-                    </div>
-                  </div>
-                </label>
-
-                <label className="block cursor-pointer">
-                  <input type="radio" name="paymentMethod" value="khalti" checked={formData.paymentMethod === 'khalti'} onChange={handleInputChange} className="hidden" />
-                  <div className={`flex items-center gap-4 p-4 border-2 rounded-xl transition-all ${formData.paymentMethod === 'khalti' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                    <div className={`w-5 h-5 border-2 rounded-full flex-shrink-0 relative transition-all ${formData.paymentMethod === 'khalti' ? 'border-blue-500' : 'border-slate-300'}`}>
-                      {formData.paymentMethod === 'khalti' && <div className="absolute inset-1 bg-blue-500 rounded-full"></div>}
-                    </div>
-                    <div className="w-12 h-12 bg-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-semibold text-[10px]">Khalti</span>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-800">Khalti</h4>
-                      <p className="text-xs text-slate-500">Pay with your Khalti wallet.</p>
-                    </div>
-                  </div>
-                </label>
+                <div className="p-4 border-2 border-blue-500 bg-blue-50 rounded-xl flex items-center gap-4">
+                   <div className="w-12 h-8 bg-white rounded border border-slate-200 flex items-center justify-center text-blue-600 font-bold italic tracking-tighter">
+                      Stripe
+                   </div>
+                   <div>
+                     <h4 className="text-sm font-semibold text-slate-800">Credit / Debit Card</h4>
+                     <p className="text-xs text-slate-500">Secure payment via Stripe</p>
+                   </div>
+                   <div className="ml-auto text-blue-600">
+                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                     </svg>
+                   </div>
+                </div>
               </div>
 
               {/* Terms and Conditions */}
@@ -615,10 +604,7 @@ const BookingPage = () => {
                   disabled={submitting}
                   className="w-full flex items-center justify-center gap-2 py-4 bg-[#4A90B8] text-white rounded-lg font-semibold hover:bg-[#2d4a6f] disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
                 >
-                  {submitting ? 'Processing...' : 
-                    formData.paymentMethod === 'esewa' ? 'Proceed to eSewa Payment' : 
-                    formData.paymentMethod === 'khalti' ? 'Proceed to Khalti Payment' : 
-                    'Complete Booking'}
+                  {submitting ? 'Processing...' : 'Pay with Stripe'}
                   <ChevronRightIcon />
                 </button>
               </div>

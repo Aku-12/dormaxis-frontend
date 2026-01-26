@@ -130,6 +130,10 @@ const StarRating = ({ rating, size = 16 }) => {
   return <div className="flex items-center gap-0.5">{stars}</div>;
 };
 
+import { API_CONFIG } from '../config/api.config';
+
+// ... (StarRating component remains same)
+
 const DormDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -137,7 +141,13 @@ const DormDetailPage = () => {
   const { isAuthenticated } = useAuthStore();
   const toast = useToast();
 
-  // Local state
+  // Helper to get image URL
+  const getImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+    return `${baseUrl}${path}`;
+  };
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -218,14 +228,29 @@ const DormDetailPage = () => {
   const securityDeposit = currentDorm ? Math.round(currentDorm.price * 0.08) : 0;
   const totalPrice = currentDorm ? currentDorm.price + securityDeposit : 0;
   
-  // Get images array
+  // Get images array with processed URLs
   const getImages = () => {
     if (!currentDorm) return [];
-    const images = currentDorm.images?.length > 0 ? currentDorm.images : [];
-    if (currentDorm.image && !images.includes(currentDorm.image)) {
-      return [currentDorm.image, ...images];
+    
+    // Combine main image and images array
+    let allImages = [];
+    if (currentDorm.image) {
+      allImages.push(currentDorm.image);
     }
-    return images.length > 0 ? images : ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=600&fit=crop'];
+    if (currentDorm.images && currentDorm.images.length > 0) {
+      allImages = [...allImages, ...currentDorm.images];
+    }
+    
+    // Remove duplicates
+    allImages = [...new Set(allImages)];
+    
+    // Default image if empty
+    if (allImages.length === 0) {
+      return ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&h=600&fit=crop'];
+    }
+    
+    // Process URLs
+    return allImages.map(img => getImageUrl(img));
   };
   
   const images = getImages();
@@ -252,7 +277,7 @@ const DormDetailPage = () => {
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Dorm not found</h2>
             <p className="text-slate-500 mb-6">{error || 'The dorm you are looking for does not exist.'}</p>
             <button 
-              className="px-6 py-3 bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2d4a6f] transition-colors"
+              className="px-6 py-3 bg-secondary text-white rounded-lg hover:bg-secondary-light transition-colors"
               onClick={() => navigate('/dorms')}
             >
               Back to Dorms
@@ -275,7 +300,7 @@ const DormDetailPage = () => {
           <span className="text-slate-400">›</span>
           <Link to="/dorms" className="text-slate-500 hover:text-[#1e3a5f]">Dorms</Link>
           <span className="text-slate-400">›</span>
-          <span className="text-[#1e3a5f] font-medium">{currentDorm.name}</span>
+          <span className="text-secondary font-medium">{currentDorm.name}</span>
         </nav>
         
         {/* Image Carousel */}
@@ -331,7 +356,7 @@ const DormDetailPage = () => {
                   onClick={() => setCurrentCarouselIndex(index)}
                   className={`flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden transition-all duration-200 ${
                     currentCarouselIndex === index
-                      ? 'ring-2 ring-[#4A90B8] ring-offset-2'
+                      ? 'ring-2 ring-primary ring-offset-2'
                       : 'opacity-70 hover:opacity-100'
                   }`}
                 >
@@ -469,7 +494,7 @@ const DormDetailPage = () => {
                               className="w-10 h-10 rounded-full object-cover"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-[#1e3a5f] text-white flex items-center justify-center font-semibold">
+                            <div className="w-10 h-10 rounded-full bg-secondary text-white flex items-center justify-center font-semibold">
                               {review.userName?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
                           )}
@@ -578,12 +603,12 @@ const DormDetailPage = () => {
                 
                 <div className="flex justify-between pt-4 border-t border-slate-200">
                   <span className="font-semibold text-slate-800">Total</span>
-                  <span className="font-bold text-[#4A90B8]">Rs {formatPrice(totalPrice)}</span>
+                  <span className="font-bold text-primary">Rs {formatPrice(totalPrice)}</span>
                 </div>
                 
                 <button 
                   onClick={handleReserveNow}
-                  className="w-full flex items-center justify-center gap-2 py-4 bg-[#4A90B8] text-white rounded-lg font-semibold hover:bg-[#2d4a6f] transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors"
                 >
                   Reserve Now
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

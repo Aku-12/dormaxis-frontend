@@ -1,2 +1,126 @@
 @import "tailwindcss";
 
+/* DormAxis Theme - Custom CSS Variables */
+@theme {
+  /* Primary Colors */
+  --color-primary: #4A90B8;
+  --color-primary-light: #5AA0C8;
+  --color-primary-dark: #3A7A9A;
+  --color-primary-darker: #2C5F7C;
+
+  /* Secondary Colors */
+  --color-secondary: #1e3a5f;
+  --color-secondary-light: #2d4a6f;
+  --color-secondary-dark: #162d4d;
+
+  /* Background Colors */
+  --color-bg-light: #E8F3F8;
+  --color-bg-lighter: #F0F7FA;
+  --color-bg-card: #FFFFFF;
+  --color-bg-page: #F9FAFB;
+
+  /* Accent Colors */
+  --color-accent-blue: #BADCE8;
+  --color-accent-blue-light: #D1E7F0;
+  --color-accent-cyan: #00D8FF;
+
+  /* Status Colors */
+  --color-success: #16a34a;
+  --color-success-light: #22c55e;
+  --color-success-bg: #f0fdf4;
+  --color-warning: #ca8a04;
+  --color-warning-light: #eab308;
+  --color-warning-bg: #fefce8;
+  --color-error: #dc2626;
+  --color-error-light: #ef4444;
+  --color-error-bg: #fef2f2;
+  --color-info: #0ea5e9;
+  --color-info-bg: #f0f9ff;
+
+  /* Rating Colors */
+  --color-rating-filled: #fbbf24;
+  --color-rating-empty: #e2e8f0;
+
+  /* Border Colors */
+  --color-border-light: #e5e7eb;
+  --color-border: #d1d5db;
+  --color-border-dark: #9ca3af;
+}
+
+/* Global Styles */
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-dark);
+}
+
+/* Focus visible styles */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Selection styles */
+::selection {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+

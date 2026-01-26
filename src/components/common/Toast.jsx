@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { CheckCircleIcon, ErrorIcon, InfoIcon, CloseIcon } from './Icons';
 
 const ToastContext = createContext(null);
 
@@ -11,32 +12,26 @@ export const useToast = () => {
 };
 
 const ToastItem = ({ toast, onRemove }) => {
-  const bgColor = toast.type === 'success'
-    ? 'bg-green-500'
-    : toast.type === 'error'
-    ? 'bg-red-500'
-    : 'bg-[#4A90B8]';
+  const styles = {
+    success: {
+      bg: 'bg-success',
+      icon: <CheckCircleIcon className="w-5 h-5" />,
+    },
+    error: {
+      bg: 'bg-error',
+      icon: <ErrorIcon className="w-5 h-5" />,
+    },
+    info: {
+      bg: 'bg-primary',
+      icon: <InfoIcon className="w-5 h-5" />,
+    },
+  };
 
-  const icon = toast.type === 'success' ? (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-  ) : toast.type === 'error' ? (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="15" y1="9" x2="9" y2="15"/>
-      <line x1="9" y1="9" x2="15" y2="15"/>
-    </svg>
-  ) : (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M12 16v-4M12 8h.01"/>
-    </svg>
-  );
+  const { bg, icon } = styles[toast.type] || styles.info;
 
   return (
     <div
-      className={`${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[280px] max-w-md animate-slide-in`}
+      className={`${bg} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[280px] max-w-md animate-slide-in`}
       role="alert"
     >
       {icon}
@@ -44,11 +39,9 @@ const ToastItem = ({ toast, onRemove }) => {
       <button
         onClick={() => onRemove(toast.id)}
         className="text-white/80 hover:text-white transition-colors"
+        aria-label="Close"
       >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
+        <CloseIcon className="w-4 h-4" />
       </button>
     </div>
   );
@@ -90,23 +83,6 @@ export const ToastProvider = ({ children }) => {
           <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
         ))}
       </div>
-
-      {/* Animation styles */}
-      <style>{`
-        @keyframes slide-in {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-      `}</style>
     </ToastContext.Provider>
   );
 };

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useDormStore from '../../store/useDormStore';
 import useAuthStore from '../../store/useAuthStore';
 import { useToast } from '../common/Toast';
+import { API_CONFIG } from '../../config/api.config';
 
 const DormCard = ({ dorm }) => {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ const DormCard = ({ dorm }) => {
   const { isAuthenticated } = useAuthStore();
   const toast = useToast();
 
-  const isInWishlist = wishlist.includes(dorm._id);
+  const isInWishlist = wishlist && wishlist.includes(dorm._id);
 
   const getDefaultImage = (beds) => {
     if (beds === 1) return 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&h=400&fit=crop';
@@ -18,7 +19,26 @@ const DormCard = ({ dorm }) => {
     return 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&h=400&fit=crop';
   };
 
-  const dormImage = dorm.image || getDefaultImage(dorm.beds);
+  // Helper to get image URL
+  const getImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+    return `${baseUrl}${path}`;
+  };
+
+  const getDormImage = (dorm) => {
+    if (dorm.image) {
+      return getImageUrl(dorm.image);
+    }
+    // Fallback if no images array or main image
+    if (dorm.images && dorm.images.length > 0) {
+       return getImageUrl(dorm.images[0]);
+    }
+    return getDefaultImage(dorm.beds);
+  };
+
+  const dormImage = getDormImage(dorm);
 
   const handleWishlistClick = async (e) => {
     e.stopPropagation();

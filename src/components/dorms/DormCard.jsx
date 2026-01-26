@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useDormStore from '../../store/useDormStore';
 import useAuthStore from '../../store/useAuthStore';
 import { useToast } from '../common/Toast';
+import { API_CONFIG } from '../../config/api.config';
 
 const DormCard = ({ dorm }) => {
   const navigate = useNavigate();
@@ -51,8 +52,19 @@ const DormCard = ({ dorm }) => {
     return `${beds} Beds`;
   };
 
+  // Convert relative path to full URL
+  const getImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+    return `${baseUrl}${path}`;
+  };
+
   // Default image if none provided
-  const imageUrl = dorm.image || dorm.images?.[0] || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&h=300&fit=crop';
+  const rawImageUrl = dorm.image || dorm.images?.[0];
+  const imageUrl = rawImageUrl
+    ? getImageUrl(rawImageUrl)
+    : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&h=300&fit=crop';
 
   const handleCardClick = () => {
     navigate(`/dorms/${dorm._id}`);

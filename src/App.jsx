@@ -8,15 +8,13 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ProfilePage from './pages/ProfilePage'
+import MFASetupPage from './pages/MFASetupPage'
 import WishlistPage from './pages/WishlistPage'
 import BookingPage from './pages/BookingPage'
 import BookingSuccessPage from './pages/BookingSuccessPage'
-import PaymentPage from './pages/PaymentPage'
 import PaymentSuccessPage from './pages/PaymentSuccessPage'
-import PaymentFailurePage from './pages/PaymentFailurePage'
-import KhaltiCallbackPage from './pages/KhaltiCallbackPage'
 import { AdminLayout, AdminProtectedRoute } from './components/admin'
-import { AdminDashboard, AdminDorms, AdminUsers } from './pages/admin'
+import { AdminDashboard, AdminDorms, AdminUsers, AdminBookings, AdminAuditLogs } from './pages/admin'
 import { ToastProvider } from './components/common'
 import useAuthStore from './store/useAuthStore'
 
@@ -45,6 +43,7 @@ function App() {
           />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route
           path="/booking/:dormId"
           element={
@@ -62,14 +61,6 @@ function App() {
           }
         />
         <Route
-          path="/payment"
-          element={
-            <ProtectedRoute>
-              <PaymentPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/payment/success"
           element={
             <ProtectedRoute>
@@ -78,26 +69,18 @@ function App() {
           }
         />
         <Route
-          path="/payment/failure"
-          element={
-            <ProtectedRoute>
-              <PaymentFailurePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/payment/khalti/callback/:bookingId"
-          element={
-            <ProtectedRoute>
-              <KhaltiCallbackPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/profile"
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mfa-setup"
+          element={
+            <ProtectedRoute>
+              <MFASetupPage />
             </ProtectedRoute>
           }
         />
@@ -113,7 +96,9 @@ function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="dorms" element={<AdminDorms />} />
+          <Route path="bookings" element={<AdminBookings />} />
           <Route path="users" element={<AdminUsers />} />
+          <Route path="audit-logs" element={<AdminAuditLogs />} />
         </Route>
 
           <Route path="*" element={<Navigate to="/" />} />

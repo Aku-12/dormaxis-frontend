@@ -75,4 +75,64 @@ export const authAPI = {
     const response = await axiosClient.delete(API_ENDPOINTS.AUTH_DELETE_AVATAR);
     return response.data;
   },
+
+  /**
+   * Get active sessions
+   * @returns {Promise} Response with list of active sessions
+   */
+  getSessions: async () => {
+    const response = await axiosClient.get(API_ENDPOINTS.AUTH_SESSIONS);
+    return response.data;
+  },
+
+  /**
+   * Revoke a specific session
+   * @param {string} sessionId - ID of session to revoke
+   * @returns {Promise} Response with success message
+   */
+  revokeSession: async (sessionId) => {
+    const response = await axiosClient.delete(`${API_ENDPOINTS.AUTH_SESSIONS}/${sessionId}`);
+    return response.data;
+  },
+
+  /**
+   * Revoke all other sessions
+   * @returns {Promise} Response with success message
+   */
+  revokeAllSessions: async () => {
+    const response = await axiosClient.delete(API_ENDPOINTS.AUTH_SESSIONS);
+    return response.data;
+  },
+
+  /**
+   * Change password
+   * @param {Object} passwordData - Current and new password
+   * @returns {Promise} Response with success message
+   */
+  changePassword: async (passwordData) => {
+    const response = await axiosClient.post('/auth/change-password', passwordData);
+    return response.data;
+  },
+
+  /**
+   * Google Login
+   * @param {string} token - Google ID Token
+   * @returns {Promise} Response with user data and token
+   */
+  googleLogin: async (token) => {
+    const response = await axiosClient.post('/auth/google', { token });
+    return response.data;
+  },
+
+  /**
+   * Delete user account
+   * @param {string} password - Current password for verification (optional for Google users)
+   * @returns {Promise} Response with success message
+   */
+  deleteAccount: async (password) => {
+    const response = await axiosClient.delete('/auth/account', {
+      data: { password }
+    });
+    return response.data;
+  }
 };

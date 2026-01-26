@@ -46,16 +46,32 @@ axiosClient.interceptors.response.use(
     // Handle errors globally
     if (error.response) {
       // Server responded with error
-      console.error('API Error:', error.response.data);
-      
+      // Don't log 401/404 noise to console
+      if (error.response.status !== 401 && error.response.status !== 404) {
+        console.error('API Error:', error.response.data);
+      }
       // Handle 401 Unauthorized - token expired or invalid
       if (error.response.status === 401) {
-        // Clear auth storage
-        localStorage.removeItem('auth-storage');
+        // Suppress loud errors for auth issues, just warn
+        console.warn('Authentication expired/invalid:', error.response.config.url);
+
+        // Get the request URL
+        const requestUrl = error.config?.url || '';
         
-        // Redirect to login if not already there
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
+        // Only logout for critical auth endpoints, not for optional features
+        // We tolerate 401s on these specific non-critical background fetches
+        const optionalAuthEndpoints = ['/auth/sessions', '/wishlist'];
+        const isOptionalEndpoint = optionalAuthEndpoints.some(endpoint => requestUrl.includes(endpoint));
+        
+        // Only clear auth and redirect if it's NOT an optional endpoint
+        if (!isOptionalEndpoint) {
+          // Clear auth storage
+          localStorage.removeItem('auth-storage');
+          
+          // Redirect to login if not already there
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
         }
       }
     } else if (error.request) {

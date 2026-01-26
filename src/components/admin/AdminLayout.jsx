@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, Outlet, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
+import { BuildingIcon } from '../common/Icons';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -33,11 +34,29 @@ const AdminLayout = () => {
       ),
     },
     {
+      name: 'Bookings',
+      path: '/admin/bookings',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
+      ),
+    },
+    {
       name: 'Users',
       path: '/admin/users',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Audit Logs',
+      path: '/admin/audit-logs',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       ),
     },
@@ -47,15 +66,15 @@ const AdminLayout = () => {
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
       <aside
-        className={`bg-white shadow-lg transition-all duration-300 ${
+        className={`bg-white shadow-lg transition-all duration-300 relative ${
           isSidebarOpen ? 'w-64' : 'w-20'
         }`}
       >
         {/* Logo */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#4A90B8] rounded-lg flex items-center justify-center text-white text-xl">
-              🏠
+            <div className="w-10 h-10 bg-[#4A90B8] rounded-lg border-2 border-[#4A90B8] flex items-center justify-center">
+              <BuildingIcon className="w-5 h-5 text-white" />
             </div>
             {isSidebarOpen && (
               <div>
@@ -90,23 +109,21 @@ const AdminLayout = () => {
           </ul>
         </nav>
 
-        {/* Toggle Sidebar Button */}
-        <div className="p-4 border-t border-gray-200 absolute bottom-0 w-full bg-white">
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg w-full transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d={isSidebarOpen ? 'M11 19l-7-7 7-7m8 14l-7-7 7-7' : 'M13 5l7 7-7 7M5 5l7 7-7 7'}
-              />
-            </svg>
-            {isSidebarOpen && <span className="font-medium">Collapse</span>}
-          </button>
-        </div>
+        {/* Toggle Sidebar Button - Absolute Top Right */}
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="absolute top-4 right-4 p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors z-20"
+          title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d={isSidebarOpen ? 'M11 19l-7-7 7-7m8 14l-7-7 7-7' : 'M13 5l7 7-7 7M5 5l7 7-7 7'}
+            />
+          </svg>
+        </button>
       </aside>
 
       {/* Main Content */}

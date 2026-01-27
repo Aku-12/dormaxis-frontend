@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Header, Footer, useToast } from '../components/common';
+import { useRecaptcha } from '../context/RecaptchaContext';
 
 const ContactUsPage = () => {
   const toast = useToast();
+  const { executeRecaptcha } = useRecaptcha();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,9 +22,16 @@ const ContactUsPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Get reCAPTCHA token for bot protection
+      const recaptchaToken = await executeRecaptcha('contact');
+
+      // TODO: Replace with actual API call when backend endpoint is ready
+      // Example: await axiosClient.post('/api/contact', { ...formData, recaptchaToken });
+
+      // Simulate API call for now
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       toast.success('Message sent successfully! We\'ll get back to you soon.');
       setFormData({
         name: '',
@@ -30,7 +39,11 @@ const ContactUsPage = () => {
         subject: '',
         message: ''
       });
-    }, 1500);
+    } catch (error) {
+      toast.error('Failed to send message. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

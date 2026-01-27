@@ -13,6 +13,7 @@ import WishlistPage from './pages/WishlistPage'
 import BookingPage from './pages/BookingPage'
 import BookingSuccessPage from './pages/BookingSuccessPage'
 import PaymentSuccessPage from './pages/PaymentSuccessPage'
+import GoogleCallbackPage from './pages/GoogleCallbackPage'
 import { AdminLayout, AdminProtectedRoute } from './components/admin'
 import { AdminDashboard, AdminDorms, AdminUsers, AdminBookings, AdminAuditLogs } from './pages/admin'
 import { ToastProvider } from './components/common'
@@ -44,6 +45,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
         <Route
           path="/booking/:dormId"
           element={

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import adminApi from '../../api/admin.api';
 
+import { useToast } from '../../components/common/Toast';
+
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +15,7 @@ const AdminUsers = () => {
     role: 'student',
     isActive: true,
   });
+  const toast = useToast();
 
   useEffect(() => {
     fetchUsers();
@@ -27,7 +30,7 @@ const AdminUsers = () => {
       }
     } catch (error) {
       console.error('Error fetching users:', error);
-      alert('Failed to fetch users');
+      toast.error('Failed to fetch users');
     } finally {
       setLoading(false);
     }
@@ -65,13 +68,13 @@ const AdminUsers = () => {
       const response = await adminApi.updateUser(editingUser._id, formData);
 
       if (response.success) {
-        alert('User updated successfully!');
+        toast.success('User updated successfully!');
         handleCloseModal();
         fetchUsers();
       }
     } catch (error) {
       console.error('Error updating user:', error);
-      alert('Failed to update user');
+      toast.error('Failed to update user');
     }
   };
 
@@ -83,12 +86,12 @@ const AdminUsers = () => {
     try {
       const response = await adminApi.deleteUser(id);
       if (response.success) {
-        alert('User deleted successfully!');
+        toast.success('User deleted successfully!');
         fetchUsers();
       }
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('Failed to delete user');
+      toast.error('Failed to delete user');
     }
   };
 

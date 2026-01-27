@@ -5,20 +5,30 @@ export const authAPI = {
   /**
    * Register new user
    * @param {Object} userData - User registration data
+   * @param {string} recaptchaToken - reCAPTCHA token (optional)
    * @returns {Promise} Response with user data
    */
-  register: async (userData) => {
-    const response = await axiosClient.post(API_ENDPOINTS.AUTH_REGISTER, userData);
+  register: async (userData, recaptchaToken = null) => {
+    const payload = { ...userData };
+    if (recaptchaToken) {
+      payload.recaptchaToken = recaptchaToken;
+    }
+    const response = await axiosClient.post(API_ENDPOINTS.AUTH_REGISTER, payload);
     return response.data;
   },
 
   /**
    * Login user
    * @param {Object} credentials - Email and password
+   * @param {string} recaptchaToken - reCAPTCHA token (optional)
    * @returns {Promise} Response with user data and token
    */
-  login: async (credentials) => {
-    const response = await axiosClient.post(API_ENDPOINTS.AUTH_LOGIN, credentials);
+  login: async (credentials, recaptchaToken = null) => {
+    const payload = { ...credentials };
+    if (recaptchaToken) {
+      payload.recaptchaToken = recaptchaToken;
+    }
+    const response = await axiosClient.post(API_ENDPOINTS.AUTH_LOGIN, payload);
     return response.data;
   },
 

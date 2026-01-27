@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../api/axios.client';
 import OTPInput from '../components/auth/OTPInput';
+import { useRecaptcha } from '../context/RecaptchaContext';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
-  
+  const { executeRecaptcha } = useRecaptcha();
+
   const [step, setStep] = useState(1); // 1: email, 2: verify code, 3: reset password
   const [email, setEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
@@ -27,12 +29,18 @@ const ForgotPasswordPage = () => {
 
   // Step 1: Request verification code
   const handleRequestCode = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await axiosClient.post('/auth/forgot-password', { email });
+      // Get reCAPTCHA token
+      const recaptchaToken = await executeRecaptcha('forgot_password');
+
+      const response = await axiosClient.post('/auth/forgot-password', {
+        email,
+        recaptchaToken,
+      });
       if (response.data.success) {
         setSuccessMessage(response.data.message);
         setStep(2);

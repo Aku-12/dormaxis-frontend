@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header, Footer, Loading, ReviewModal } from '../components/common';
+import { Header, Footer, Loading, ReviewModal, useToast } from '../components/common';
 import { EyeIcon, EyeOffIcon } from '../components/common/Icons';
 import useAuthStore from '../store/useAuthStore';
-import { authAPI } from '../api';
+import { authAPI, bookingAPI, reviewAPI } from '../api';
 import { API_CONFIG } from '../config/api.config';
 
 // Simple time ago helper to avoid date-fns dependency
@@ -61,10 +61,12 @@ const ActiveSessionsSection = () => {
   };
 
   const handleRevokeAll = async () => {
-    if (window.confirm('Are you sure you want to sign out of all other devices?')) {
+    if (window.confirm('Are you sure you want to sign out from ALL devices? This will also end your current session.')) {
       const result = await revokeAllSessions();
       if (result.success) {
-        fetchUserSessions();
+        // Since current session is also revoked, redirect to login
+        await logout();
+        navigate('/login');
       }
     }
   };
@@ -120,7 +122,7 @@ const ActiveSessionsSection = () => {
             onClick={handleRevokeAll}
             className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
           >
-            Sign Out All Other Devices
+            Sign Out from All Devices
           </button>
         )}
       </div>
@@ -199,6 +201,7 @@ const ActiveSessionsSection = () => {
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, updateUser } = useAuthStore();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('personal');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);

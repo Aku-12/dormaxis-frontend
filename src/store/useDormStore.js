@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { dormsAPI, wishlistAPI } from '../api';
+import useAuthStore from './useAuthStore';
 
 const useDormStore = create((set, get) => ({
   // State
@@ -159,13 +160,20 @@ const useDormStore = create((set, get) => ({
 
   // Wishlist actions
   fetchWishlist: async () => {
+    // Check authentication from store state directly
+    const { isAuthenticated } = useAuthStore.getState();
+    if (!isAuthenticated) return;
+
     try {
       const response = await wishlistAPI.getWishlist();
       if (response.success) {
         set({ wishlist: response.data.map((d) => d._id) });
       }
     } catch (error) {
-      console.error('Error fetching wishlist:', error);
+      // Ignore 401s as they might happen during logout/session expiry
+      if (error.response?.status !== 401) {
+        console.error('Error fetching wishlist:', error);
+      }
     }
   },
 

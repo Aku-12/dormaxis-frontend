@@ -1,27 +1,28 @@
 import React from 'react';
+import { FiClock, FiCheckCircle, FiCreditCard, FiHeart } from 'react-icons/fi';
 
 const benefits = [
   {
     id: 1,
-    icon: '🕐',
+    icon: FiClock,
     title: '24/7 Support',
     description: 'Our dedicated team is always here to help with any questions or concerns',
   },
   {
     id: 2,
-    icon: '✓',
+    icon: FiCheckCircle,
     title: 'Quality Guaranteed',
     description: 'Every dorms meets our strict quality standards for your peace of mind',
   },
   {
     id: 3,
-    icon: '💳',
+    icon: FiCreditCard,
     title: 'No Hidden Fees',
     description: 'Transparent pricing with everything included upfront. What you see is what you pay',
   },
   {
     id: 4,
-    icon: '❤️',
+    icon: FiHeart,
     title: 'Trusted Community',
     description: 'Join thousands of satisfied students who found their perfect dorms',
   },
@@ -40,18 +41,21 @@ const WhyChooseSection = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {benefits.map((benefit) => (
-            <div
-              key={benefit.id}
-              className="bg-[#5AA0C8] bg-opacity-40 backdrop-blur-sm rounded-xl p-8 hover:bg-opacity-60 transition-all duration-300"
-            >
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6">
-                <span className="text-3xl text-[#4A90B8] font-bold">{benefit.icon}</span>
+          {benefits.map((benefit) => {
+            const IconComponent = benefit.icon;
+            return (
+              <div
+                key={benefit.id}
+                className="bg-[#5AA0C8] bg-opacity-40 backdrop-blur-sm rounded-xl p-8 hover:bg-opacity-60 transition-all duration-300"
+              >
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6">
+                  <IconComponent className="text-3xl text-[#4A90B8]" size={28} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">{benefit.title}</h3>
+                <p className="text-[#E8F3F8] leading-relaxed">{benefit.description}</p>
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">{benefit.title}</h3>
-              <p className="text-[#E8F3F8] leading-relaxed">{benefit.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

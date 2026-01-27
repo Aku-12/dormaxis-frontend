@@ -11,11 +11,21 @@ import {
   ChevronRightIcon,
   BuildingIcon
 } from '../components/common/Icons';
-import { GoogleLogin } from '@react-oauth/google';
+import { useRecaptcha } from '../context/RecaptchaContext';
+import axiosClient from '../api/axios.client';
+import {
+  generateCodeVerifier,
+  generateCodeChallenge,
+  storeCodeVerifier
+} from '../utils/pkceUtils';
+import { sanitizeText } from '../utils/xssUtils';
+
+
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { executeRecaptcha } = useRecaptcha();
   const {
     login,
     verifyMFA,
@@ -60,34 +70,51 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('--- Login Form Submitted ---');
+    console.log('Email:', formData.email);
     clearError();
 
+    // Get reCAPTCHA token
+    const recaptchaToken = await executeRecaptcha('login');
+    console.log('reCAPTCHA token obtained');
+
     const result = await login({
-      email: formData.email,
+      email: sanitizeText(formData.email),
       password: formData.password,
-    });
+    }, recaptchaToken);
+
+    console.log('Login result:', result);
 
     if (result.success && !result.mfaRequired) {
+      console.log('Login successful, no MFA required. Redirecting...');
       handleLoginSuccess();
+    } else if (result.mfaRequired) {
+      console.log('MFA required. Switching to MFA screen.');
     }
   };
 
   const handleMFAComplete = async (otpCode) => {
+    console.log('--- MFA Code Entered ---');
     clearError();
     const result = await verifyMFA(otpCode);
+    console.log('MFA verification result:', result);
     
     if (result.success) {
+      console.log('MFA successful. Redirecting...');
       handleLoginSuccess();
     }
   };
 
   const handleBackupCodeSubmit = async (e) => {
     e.preventDefault();
+    console.log('--- Backup Code Submitted ---');
     clearError();
     
     const result = await useBackupCode(backupCode);
+    console.log('Backup code result:', result);
     
     if (result.success) {
+      console.log('Backup code successful. Redirecting...');
       handleLoginSuccess();
     }
   };
@@ -120,40 +147,6 @@ const LoginPage = () => {
     setShowBackupInput(false);
     setBackupCode('');
   };
-
-  // MFA Verification Screen - omitted changes here as it's separate flow...
-
-  // ... (Keep MFA Render Logic) ...
-
-  // Main Render
-  if (mfaRequired) {
-     // ... (MFA UI code block remains unchanged effectively, just ensuring context) ...
-     /* Re-including MFA block for context if needed, but tool replaces exact lines. 
-        Since I'm replacing from line 1 to 248, I need to be careful not to cut off MFA logic if it was inside.
-        Wait, line 106 starts "if (mfaRequired)". So I need to include that logic or stop replacement before it.
-        Or better, replace lines 1-38, then the handleLoginSuccess logic, then the render return.
-        Since I am replacing a BIG chunk, I must provide all content.
-     */
-     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        {/* ... (MFA UI content from original file) ... */}
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
-              <LockIcon className="w-6 h-6" />
-            </div>
-            <span className="text-xl font-bold text-gray-800">Two-Factor Authentication</span>
-          </div>
-          {/* ... keeping simplified for this purpose ... */}
-          {/* Actually, it is safer to replace specific functions or the return block. */}
-        </div>
-      </div>
-     );
-  }
-  
-  // Let's restart the replacement to target specific blocks to avoid deleting MFA UI logic by mistake.
-
-
 
 
   // MFA Verification Screen
@@ -414,31 +407,62 @@ const LoginPage = () => {
               </div>
 
               <div className="flex justify-center">
-                 <GoogleLogin
-                    onSuccess={async (credentialResponse) => {
-                      if (!credentialResponse.credential) return;
-                      // We need to access googleLogin from the store.
-                      // Since I cannot change the destructuring in this block easily without touching top of file,
-                      // I will access it via the hook if it was destructured, OR I will assume `login` handles it? No `login` takes credentials.
-                      // I will mistakenly use `googleLogin` here knowing it will fail until I update destructuring.
-                      // OR I can use the imported store directly: useAuthStore.getState().googleLogin
-                      const result = await useAuthStore.getState().googleLogin(credentialResponse.credential);
-                      if (result.success) {
-                        handleLoginSuccess();
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      // Generate PKCE parameters
+                      const verifier = generateCodeVerifier();
+                      const challenge = await generateCodeChallenge(verifier);
+                      
+                      // Store for callback verification
+                      storeCodeVerifier(verifier);
+                      
+                      // Get OAuth URL from backend
+                      const response = await axiosClient.get('/auth/google/url', {
+                        params: {
+                          code_challenge: challenge,
+                          code_challenge_method: 'S256'
+                        }
+                      });
+                      
+                      if (response.data.success) {
+                        // Redirect to Google
+                        window.location.href = response.data.data.authUrl;
                       }
-                    }}
-                    onError={() => {
-                      console.log('Login Failed');
-                    }}
-                    useOneTap
-                  />
+                    } catch (error) {
+                      console.error('Google Sign-In error:', error);
+                    }
+                  }}
+                  className="flex items-center justify-center gap-3 w-full max-w-xs px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  <span className="text-gray-700 font-medium">Continue with Google</span>
+                </button>
               </div>
 
             </form>
 
             {/* Sign Up Link */}
             <p className="mt-8 text-center text-sm text-gray-600">
-              New to Urban homes?{' '}
+              New to Dorm Axis?{' '}
               <Link to="/signup" className="text-primary hover:text-primary-dark font-medium">
                 Create an account
               </Link>

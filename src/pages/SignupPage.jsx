@@ -2,20 +2,24 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import PasswordStrengthMeter from '../components/auth/PasswordStrengthMeter';
-import { 
-  UserIcon, 
-  EmailIcon, 
-  PhoneIcon, 
-  LockIcon, 
-  EyeIcon, 
-  EyeOffIcon, 
-  ChevronRightIcon, 
-  BuildingIcon
+import {
+  UserIcon,
+  EmailIcon,
+  PhoneIcon,
+  LockIcon,
+  EyeIcon,
+  EyeOffIcon,
+  ChevronRightIcon,
+  BuildingIcon,
+  CheckIcon
 } from '../components/common/Icons';
 import { GoogleLogin } from '@react-oauth/google';
+import { useRecaptcha } from '../context/RecaptchaContext';
+import { sanitizeText } from '../utils/xssUtils';
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const { executeRecaptcha } = useRecaptcha();
   const { register, loading, error: authError, clearError } = useAuthStore();
 
   const [formData, setFormData] = useState({
@@ -102,12 +106,17 @@ const SignupPage = () => {
       return;
     }
 
-    const result = await register({
-      name: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      password: formData.password,
-      phone: formData.phone,
-    });
+    // Get reCAPTCHA token
+    const recaptchaToken = await executeRecaptcha('register');
+
+    const sanitizedData = {
+      name: sanitizeText(`${formData.firstName} ${formData.lastName}`),
+      email: sanitizeText(formData.email.toLowerCase()),
+      password: formData.password, // Don't sanitize passwords
+      phone: sanitizeText(formData.phone),
+    };
+
+    const result = await register(sanitizedData, recaptchaToken);
 
     if (result.success) {
       setShowSuccess(true);
@@ -336,7 +345,7 @@ const SignupPage = () => {
                     className={`mt-1 w-4 h-4 text-[#4A90B8] border-gray-300 rounded focus:ring-primary ${errors.agreeToTerms ? 'border-red-500' : ''}`}
                   />
                   <span className="ml-2 text-sm text-gray-600">
-                    I agree to Urban Homes{' '}
+                    I agree to Dorm Axis{' '}
                     <a href="#terms" className="text-[#4A90B8] hover:text-[#3A7A9A]">
                       Terms of Service
                     </a>{' '}

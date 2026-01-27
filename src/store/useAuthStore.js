@@ -150,6 +150,32 @@ const useAuthStore = create(
         }
       },
 
+      googleLogin: async (token) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await authAPI.googleLogin(token);
+          
+          if (response.success) {
+            set({
+              user: response.data.user,
+              token: response.data.token,
+              isAuthenticated: true,
+              loading: false,
+              mfaRequired: false,
+              mfaTempToken: null,
+            });
+            return { success: true };
+          } else {
+            set({ error: response.error || 'Google login failed', loading: false });
+            return { success: false, error: response.error };
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.error || error.message || 'Google login failed';
+          set({ error: errorMessage, loading: false });
+          return { success: false, error: errorMessage };
+        }
+      },
+
       logout: async () => {
         try {
           await authAPI.logout();
@@ -164,6 +190,60 @@ const useAuthStore = create(
             mfaRequired: false,
             mfaTempToken: null,
           });
+        }
+      },
+
+      getSessions: async () => {
+        set({ loading: true, error: null });
+        try {
+          const response = await authAPI.getSessions();
+          if (response.success) {
+            set({ loading: false });
+            return { success: true, data: response.data };
+          } else {
+            set({ error: 'Failed to fetch sessions', loading: false });
+            return { success: false, error: response.error };
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.error || 'Failed to fetch sessions';
+          set({ error: errorMessage, loading: false });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      revokeSession: async (sessionId) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await authAPI.revokeSession(sessionId);
+          if (response.success) {
+            set({ loading: false });
+            return { success: true, message: response.message };
+          } else {
+            set({ error: 'Failed to revoke session', loading: false });
+            return { success: false, error: response.error };
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.error || 'Failed to revoke session';
+          set({ error: errorMessage, loading: false });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      revokeAllSessions: async () => {
+        set({ loading: true, error: null });
+        try {
+          const response = await authAPI.revokeAllSessions();
+          if (response.success) {
+            set({ loading: false });
+            return { success: true, message: response.message };
+          } else {
+            set({ error: 'Failed to revoke sessions', loading: false });
+            return { success: false, error: response.error };
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.error || 'Failed to revoke sessions';
+          set({ error: errorMessage, loading: false });
+          return { success: false, error: errorMessage };
         }
       },
 

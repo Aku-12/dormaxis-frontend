@@ -1,10 +1,203 @@
-import React, { useState, useRef } from 'react';
-import { Header, Footer } from '../components/common';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Header, Footer, Loading, ReviewModal } from '../components/common';
+import { EyeIcon, EyeOffIcon } from '../components/common/Icons';
 import useAuthStore from '../store/useAuthStore';
 import { authAPI } from '../api';
 import { API_CONFIG } from '../config/api.config';
 
+// Simple time ago helper to avoid date-fns dependency
+const formatDistanceToNow = (date) => {
+  const now = new Date();
+  const past = new Date(date);
+  const diffInSeconds = Math.floor((now - past) / 1000);
+
+  if (diffInSeconds < 60) return 'just now';
+  
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 30) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
+  
+  return `${Math.floor(diffInMonths / 12)} year${Math.floor(diffInMonths / 12) > 1 ? 's' : ''} ago`;
+};
+
+const ActiveSessionsSection = () => {
+  const { getSessions, revokeSession, revokeAllSessions, logout } = useAuthStore();
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  const fetchUserSessions = async () => {
+    setLoading(true);
+    const result = await getSessions();
+    if (result.success) {
+      setSessions(result.data);
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchUserSessions();
+  }, []);
+
+  const handleRevoke = async (sessionId) => {
+    if (window.confirm('Are you sure you want to log out this device?')) {
+      const result = await revokeSession(sessionId);
+      if (result.success) {
+        fetchUserSessions();
+      }
+    }
+  };
+
+  const handleRevokeAll = async () => {
+    if (window.confirm('Are you sure you want to sign out of all other devices?')) {
+      const result = await revokeAllSessions();
+      if (result.success) {
+        fetchUserSessions();
+      }
+    }
+  };
+
+  const handleCurrentLogout = async () => {
+    if (window.confirm('Are you sure you want to log out?')) {
+        await logout();
+        navigate('/login');
+    }
+  };
+
+  if (loading && sessions.length === 0) {
+    return (
+      <div className="bg-gray-50 rounded-xl p-4 flex justify-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-8">
+        <div className="flex items-center gap-2 mb-4">
+          <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <h2 className="text-lg font-semibold text-gray-900">Active Sessions</h2>
+        </div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 flex items-center justify-between">
+          <span>{error}</span>
+          <button 
+            onClick={fetchUserSessions}
+            className="text-sm font-medium hover:underline"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <h2 className="text-lg font-semibold text-gray-900">Active Sessions</h2>
+        </div>
+        {sessions.length > 1 && (
+          <button
+            onClick={handleRevokeAll}
+            className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+          >
+            Sign Out All Other Devices
+          </button>
+        )}
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        {sessions.length === 0 ? (
+             <div className="p-4 text-center text-gray-500">
+               No active sessions found.
+             </div>
+        ) : (
+            sessions.map((session) => (
+            <div
+                key={session._id}
+                className={`p-4 border-b border-gray-100 last:border-0 flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                session.isCurrent ? 'bg-blue-50/50' : ''
+                }`}
+            >
+                <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    session.isCurrent ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'
+                }`}>
+                    {session.deviceType === 'Mobile' ? (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    ) : (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    )}
+                </div>
+                <div>
+                    <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900">
+                        {session.os} • {session.browser}
+                    </span>
+                    {session.isCurrent && (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                        Current
+                        </span>
+                    )}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-0.5">
+                    {session.ipAddress} • Last active {formatDistanceToNow(new Date(session.lastActivity))}
+                    </div>
+                </div>
+                </div>
+
+                {session.isCurrent ? (
+                    <button
+                        onClick={handleCurrentLogout}
+                        className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-white transition-colors"
+                        title="Log Out"
+                    >
+                        Log Out
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => handleRevoke(session._id)}
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
+                        title="Revoke Session"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                )}
+            </div>
+            ))
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { user, updateUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState('personal');
   const [isEditing, setIsEditing] = useState(false);
@@ -12,6 +205,37 @@ const ProfilePage = () => {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef(null);
+
+  // Booking State
+  const [bookings, setBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+
+  // Review Modal State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedDormForReview, setSelectedDormForReview] = useState(null);
+
+  // Change Password Modal State
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [passwordFormData, setPasswordFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmNewPassword: '',
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  
+  // Password Visibility State
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  // Delete Account Modal State
+  const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
 
   // Form state for personal info
   const [formData, setFormData] = useState({
@@ -28,26 +252,6 @@ const ProfilePage = () => {
     twoFactorAuth: user?.mfaEnabled ?? false,
   });
 
-  // Mock bookings data
-  const [bookings] = useState([
-    {
-      id: 1,
-      name: 'Deluxe Single Dorm',
-      beds: 1,
-      block: 'Block D',
-      status: 'ACTIVE',
-      image: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=200&h=150&fit=crop',
-    },
-    {
-      id: 2,
-      name: 'Two Setter',
-      beds: 1,
-      block: 'Block D',
-      status: 'CANCELLED',
-      image: 'https://images.unsplash.com/photo-1595846519845-68e298c2edd8?w=200&h=150&fit=crop',
-    },
-  ]);
-
   // Get avatar URL with backend base
   const getAvatarUrl = (avatarPath) => {
     if (!avatarPath) return null;
@@ -57,6 +261,54 @@ const ProfilePage = () => {
     return `${baseUrl}${avatarPath}`;
   };
 
+  // Fetch Bookings
+  const fetchBookings = async () => {
+    try {
+      setBookingsLoading(true);
+      const response = await bookingAPI.getUserBookings();
+      if (response.success) {
+        setBookings(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      toast.error('Failed to load bookings');
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'bookings') {
+      fetchBookings();
+    }
+  }, [activeTab]);
+
+
+  // Helper to check if review can be added
+  const canReview = (booking) => {
+    return (booking.status === 'confirmed' || booking.status === 'completed') && !booking.hasReviewed;
+  };
+
+  const handleOpenReviewModal = (booking) => {
+    setSelectedDormForReview({
+        id: booking.dorm._id,
+        name: booking.dorm.name
+    });
+    setIsReviewModalOpen(true);
+  };
+
+  const handleSubmitReview = async (reviewData) => {
+    if (!selectedDormForReview) return;
+    try {
+        await reviewAPI.addReview(selectedDormForReview.id, reviewData);
+        toast.success('Review submitted successfully!');
+        // Refresh bookings or Review state if needed (not strictly necessary if we don't show "Reviewed" badge immediately on refresh)
+        fetchBookings(); // Refresh bookings to update 'hasReviewed' status
+    } catch (error) {
+        throw error; // Re-throw to be handled by the modal
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -64,6 +316,75 @@ const ProfilePage = () => {
 
   const handleSettingToggle = (setting) => {
     setSettings(prev => ({ ...prev, [setting]: !prev[setting] }));
+  };
+
+  const handlePasswordInputChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    // Validate passwords match
+    if (passwordFormData.newPassword !== passwordFormData.confirmNewPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    // Validate password length
+    if (passwordFormData.newPassword.length < 12) {
+      setPasswordError('Password must be at least 12 characters');
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    try {
+      const response = await authAPI.changePassword({
+        currentPassword: passwordFormData.currentPassword,
+        newPassword: passwordFormData.newPassword,
+        confirmNewPassword: passwordFormData.confirmNewPassword,
+      });
+
+      if (response.success) {
+        setPasswordSuccess('Password changed successfully!');
+        setPasswordFormData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
+        setTimeout(() => {
+          setIsChangePasswordModalOpen(false);
+          setPasswordSuccess('');
+        }, 2000);
+      } else {
+        setPasswordError(response.error || 'Failed to change password');
+      }
+    } catch (error) {
+      setPasswordError(error.response?.data?.error || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    setDeleteAccountError('');
+    setDeleteAccountLoading(true);
+
+    try {
+      const response = await authAPI.deleteAccount(deleteAccountPassword);
+      if (response.success) {
+        // Clear auth store and redirect to login
+        useAuthStore.getState().logout();
+        navigate('/login');
+      } else {
+        setDeleteAccountError(response.error || 'Failed to delete account');
+      }
+    } catch (error) {
+      setDeleteAccountError(error.response?.data?.error || 'Failed to delete account');
+    } finally {
+      setDeleteAccountLoading(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -252,17 +573,17 @@ const ProfilePage = () => {
 
             {/* User Info */}
             <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-2xl font-bold text-[#2C5F7C]">{user?.name || 'John Doe'}</h1>
+              <h1 className="text-2xl font-bold text-secondary">{user?.name || 'John Doe'}</h1>
               <p className="text-gray-500 mt-1">{user?.email || 'john.doe@email.com'}</p>
 
               {/* Stats */}
               <div className="flex justify-center sm:justify-start gap-8 mt-4">
                 <div className="text-center">
-                  <span className="block text-xl font-bold text-[#4A90B8]">{bookings.length}</span>
+                  <span className="block text-xl font-bold text-primary">{bookings.length}</span>
                   <span className="text-sm text-gray-500">Bookings</span>
                 </div>
                 <div className="text-center">
-                  <span className="block text-xl font-bold text-[#4A90B8]">2</span>
+                  <span className="block text-xl font-bold text-primary">2</span>
                   <span className="text-sm text-gray-500">Reviews</span>
                 </div>
               </div>
@@ -301,7 +622,7 @@ const ProfilePage = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`py-4 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab.id
-                      ? 'border-[#4A90B8] text-[#4A90B8]'
+                      ? 'border-primary text-primary'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -332,7 +653,7 @@ const ProfilePage = () => {
                       value={formData.firstName}
                       onChange={handleInputChange}
                       disabled={!isEditing}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#4A90B8] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
                       placeholder="John"
                     />
                   </div>
@@ -344,7 +665,7 @@ const ProfilePage = () => {
                       value={formData.lastName}
                       onChange={handleInputChange}
                       disabled={!isEditing}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#4A90B8] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
                       placeholder="Doe"
                     />
                   </div>
@@ -356,7 +677,7 @@ const ProfilePage = () => {
                       value={formData.email}
                       onChange={handleInputChange}
                       disabled={true}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#4A90B8] focus:border-transparent disabled:bg-gray-50 disabled:text-[#4A90B8] transition-colors"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-50 disabled:text-[#4A90B8] transition-colors"
                       placeholder="john.doe@email.com"
                     />
                   </div>
@@ -368,7 +689,7 @@ const ProfilePage = () => {
                       value={formData.phone}
                       onChange={handleInputChange}
                       disabled={!isEditing}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#4A90B8] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition-colors"
                       placeholder="+1 (555) 123-4567"
                     />
                   </div>
@@ -379,7 +700,7 @@ const ProfilePage = () => {
                     <button
                       onClick={handleSaveProfile}
                       disabled={loading}
-                      className="px-6 py-2.5 bg-[#4A90B8] text-white rounded-lg hover:bg-[#3A7A9A] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       {loading && (
                         <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -404,38 +725,69 @@ const ProfilePage = () => {
                   <h2 className="text-lg font-semibold text-gray-900">My Bookings</h2>
                 </div>
 
+                {bookingsLoading ? (
+                    <div className="flex justify-center py-12">
+                        <Loading />
+                    </div>
+                ) : (
                 <div className="space-y-4">
                   {bookings.map((booking) => (
                     <div
-                      key={booking.id}
-                      className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                      key={booking._id}
+                      className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                     >
                       <img
-                        src={booking.image}
-                        alt={booking.name}
-                        className="w-20 h-16 object-cover rounded-lg"
+                        src={booking.dorm?.image ? getAvatarUrl(booking.dorm.image) : '/images/dorms/default.jpg'}
+                        alt={booking.dorm?.name}
+                        className="w-full sm:w-24 h-32 sm:h-20 object-cover rounded-lg"
+                        onError={(e) => { e.target.src = '/images/dorms/default.jpg'; }}
                       />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{booking.name}</h3>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            {booking.beds} Bed
-                          </span>
-                          <span>{booking.block}</span>
+                      <div className="flex-1 w-full">
+                        <div className="flex justify-between items-start">
+                             <h3 className="font-semibold text-gray-900">{booking.dorm?.name || 'Unknown Dorm'}</h3>
+                             <span
+                                className={`px-3 py-1 text-xs font-medium rounded-full ${
+                                booking.status === 'confirmed' || booking.status === 'completed'
+                                    ? 'bg-green-100 text-green-700'
+                                    : booking.status === 'pending' 
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-red-100 text-red-700'
+                                }`}
+                            >
+                                {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1)}
+                            </span>
                         </div>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                           <span>Block {booking.dorm?.block}</span>
+                           <span>•</span>
+                           <span>{booking.numberOfOccupants} Guests</span>
+                           <span>•</span>
+                           <span>Rs {booking.totalAmount?.toLocaleString()}</span>
+                        </div>
+                        
+                         {/* Action Buttons */}
+                         <div className="flex gap-3 mt-3">
+                            <button 
+                                onClick={() => navigate(`/booking/success/${booking._id}`, { state: { booking } })}
+                                className="text-sm font-medium text-blue-600 hover:underline"
+                            >
+                                View Ticket
+                            </button>
+                            
+                            {canReview(booking) && (
+                                <button
+                                    onClick={() => handleOpenReviewModal(booking)}
+                                    className="text-sm font-medium text-primary hover:text-primary-dark hover:underline flex items-center gap-1"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    </svg>
+                                    Write Review
+                                </button>
+                            )}
+                         </div>
+
                       </div>
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          booking.status === 'ACTIVE'
-                            ? 'bg-green-50 text-green-600'
-                            : 'bg-red-50 text-red-500'
-                        }`}
-                      >
-                        {booking.status}
-                      </span>
                     </div>
                   ))}
 
@@ -446,9 +798,13 @@ const ProfilePage = () => {
                       </svg>
                       <h3 className="mt-4 text-gray-900 font-medium">No bookings yet</h3>
                       <p className="mt-2 text-gray-500 text-sm">Your booking history will appear here.</p>
+                      <button onClick={() => navigate('/dorms')} className="mt-4 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark">
+                        Browse Dorms
+                      </button>
                     </div>
                   )}
                 </div>
+                )}
               </div>
             )}
 
@@ -456,54 +812,7 @@ const ProfilePage = () => {
             {activeTab === 'settings' && (
               <div className="space-y-8">
                 {/* Notifications Section */}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Email Notifications</h3>
-                        <p className="text-sm text-gray-500">Receive booking updates via email</p>
-                      </div>
-                      <button
-                        onClick={() => handleSettingToggle('emailNotifications')}
-                        className={`relative w-12 h-6 rounded-full transition-colors ${
-                          settings.emailNotifications ? 'bg-[#4A90B8]' : 'bg-gray-300'
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                            settings.emailNotifications ? 'translate-x-7' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">SMS Notifications</h3>
-                        <p className="text-sm text-gray-500">Get text messages for important updates</p>
-                      </div>
-                      <button
-                        onClick={() => handleSettingToggle('smsNotifications')}
-                        className={`relative w-12 h-6 rounded-full transition-colors ${
-                          settings.smsNotifications ? 'bg-[#4A90B8]' : 'bg-gray-300'
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                            settings.smsNotifications ? 'translate-x-7' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                {/* Notifications Section Removed */}
 
                 {/* Security Section */}
                 <div>
@@ -520,30 +829,43 @@ const ProfilePage = () => {
                         <h3 className="font-medium text-gray-900">Change Password</h3>
                         <p className="text-sm text-gray-500">Update your account password</p>
                       </div>
-                      <button className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-white font-medium text-sm transition-colors">
+                      <button 
+                        onClick={() => setIsChangePasswordModalOpen(true)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-white font-medium text-sm transition-colors"
+                      >
                         Change
                       </button>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Two-Factor Authentication</h3>
-                        <p className="text-sm text-gray-500">Add extra security to your account</p>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${user?.mfaEnabled ? 'bg-green-100' : 'bg-gray-100'}`}>
+                          <svg className={`w-5 h-5 ${user?.mfaEnabled ? 'text-green-600' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900">Two-Factor Authentication</h3>
+                          <p className="text-sm text-gray-500">
+                            {user?.mfaEnabled ? (
+                              <span className="text-green-600">Enabled - Your account is protected</span>
+                            ) : (
+                              'Add extra security to your account'
+                            )}
+                          </p>
+                        </div>
                       </div>
                       <button
-                        onClick={() => handleSettingToggle('twoFactorAuth')}
-                        className={`relative w-12 h-6 rounded-full transition-colors ${
-                          settings.twoFactorAuth ? 'bg-[#4A90B8]' : 'bg-gray-300'
-                        }`}
+                        onClick={() => navigate('/mfa-setup')}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-white font-medium text-sm transition-colors"
                       >
-                        <span
-                          className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                            settings.twoFactorAuth ? 'translate-x-7' : 'translate-x-1'
-                          }`}
-                        />
+                        {user?.mfaEnabled ? 'Manage' : 'Enable'}
                       </button>
                     </div>
                   </div>
+
+                  {/* Active Sessions Section */}
+                  <ActiveSessionsSection />
                 </div>
 
                 {/* Delete Account Section */}
@@ -559,7 +881,10 @@ const ProfilePage = () => {
                     <p className="text-sm text-gray-600 mb-4">
                       Once you delete your account, there is no going back.
                     </p>
-                    <button className="px-4 py-2 border border-red-300 text-red-500 rounded-lg hover:bg-red-100 font-medium text-sm transition-colors">
+                    <button 
+                      onClick={() => setIsDeleteAccountModalOpen(true)}
+                      className="px-4 py-2 border border-red-300 text-red-500 rounded-lg hover:bg-red-100 font-medium text-sm transition-colors"
+                    >
                       Delete Account
                     </button>
                   </div>
@@ -568,6 +893,259 @@ const ProfilePage = () => {
             )}
           </div>
         </div>
+
+        <ReviewModal
+            isOpen={isReviewModalOpen}
+            onClose={() => setIsReviewModalOpen(false)}
+            onSubmit={handleSubmitReview}
+            dormName={selectedDormForReview?.name}
+        />
+
+        {/* Change Password Modal */}
+        {isChangePasswordModalOpen && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900">Change Password</h2>
+                  <button
+                    onClick={() => {
+                      setIsChangePasswordModalOpen(false);
+                      setPasswordFormData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
+                      setPasswordError('');
+                      setPasswordSuccess('');
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="p-6 space-y-4">
+                {passwordError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                    {passwordError}
+                  </div>
+                )}
+                {passwordSuccess && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm">
+                    {passwordSuccess}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      name="currentPassword"
+                      value={passwordFormData.currentPassword}
+                      onChange={handlePasswordInputChange}
+                      required
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all pr-12"
+                      placeholder="Enter current password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOffIcon className="h-5 w-5" />
+                      ) : (
+                        <EyeIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      name="newPassword"
+                      value={passwordFormData.newPassword}
+                      onChange={handlePasswordInputChange}
+                      required
+                      minLength={12}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all pr-12"
+                      placeholder="Enter new password (min 12 characters)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      {showNewPassword ? (
+                        <EyeOffIcon className="h-5 w-5" />
+                      ) : (
+                        <EyeIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmNewPassword ? "text" : "password"}
+                      name="confirmNewPassword"
+                      value={passwordFormData.confirmNewPassword}
+                      onChange={handlePasswordInputChange}
+                      required
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all pr-12"
+                      placeholder="Confirm new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      {showConfirmNewPassword ? (
+                        <EyeOffIcon className="h-5 w-5" />
+                      ) : (
+                        <EyeIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsChangePasswordModalOpen(false);
+                      setPasswordFormData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
+                      setPasswordError('');
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="flex-1 px-4 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                  >
+                    {passwordLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      'Change Password'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Account Confirmation Modal */}
+        {isDeleteAccountModalOpen && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900">Delete Account</h2>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsDeleteAccountModalOpen(false);
+                      setDeleteAccountPassword('');
+                      setDeleteAccountError('');
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleDeleteAccount} className="p-6 space-y-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm text-red-600 font-medium mb-2">Warning: This action cannot be undone!</p>
+                  <p className="text-sm text-gray-600">
+                    Deleting your account will permanently remove all your data, including your profile, bookings, and reviews.
+                  </p>
+                </div>
+
+                {deleteAccountError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                    {deleteAccountError}
+                  </div>
+                )}
+
+                {/* Only show password field for non-Google users */}
+                {!user?.googleId && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter your password to confirm
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showDeletePassword ? "text" : "password"}
+                        value={deleteAccountPassword}
+                        onChange={(e) => setDeleteAccountPassword(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all pr-12"
+                        placeholder="Enter your password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowDeletePassword(!showDeletePassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      >
+                        {showDeletePassword ? (
+                          <EyeOffIcon className="h-5 w-5" />
+                        ) : (
+                          <EyeIcon className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDeleteAccountModalOpen(false);
+                      setDeleteAccountPassword('');
+                      setDeleteAccountError('');
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={deleteAccountLoading}
+                    className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                  >
+                    {deleteAccountLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      'Delete My Account'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
       </main>
 
       <Footer />

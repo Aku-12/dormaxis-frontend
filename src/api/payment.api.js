@@ -9,10 +9,15 @@ export const paymentAPI = {
   /**
    * Create Stripe Checkout Session
    * @param {Object} bookingData - Booking and payment details
+   * @param {string} recaptchaToken - reCAPTCHA token (optional)
    * @returns {Promise} Response with session URL
    */
-  createStripeCheckoutSession: async (bookingData) => {
-    const response = await axiosClient.post(API_ENDPOINTS.PAYMENT_CREATE_SESSION, bookingData);
+  createStripeCheckoutSession: async (bookingData, recaptchaToken = null) => {
+    const payload = { ...bookingData };
+    if (recaptchaToken) {
+      payload.recaptchaToken = recaptchaToken;
+    }
+    const response = await axiosClient.post(API_ENDPOINTS.PAYMENT_CREATE_SESSION, payload);
     return response.data;
   },
 

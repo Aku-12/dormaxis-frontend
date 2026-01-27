@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import adminApi from '../../api/admin.api';
+import { API_CONFIG } from '../../config/api.config';
+import { useToast } from '../../components/common/Toast';
 
 const AdminDorms = () => {
   const [dorms, setDorms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingDorm, setEditingDorm] = useState(null);
+  const toast = useToast();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -15,7 +18,7 @@ const AdminDorms = () => {
     amenities: '',
     isPopular: false,
     rating: '',
-    image: '',
+    images: [],
   });
 
   useEffect(() => {
@@ -31,7 +34,7 @@ const AdminDorms = () => {
       }
     } catch (error) {
       console.error('Error fetching dorms:', error);
-      alert('Failed to fetch dorms');
+      toast.error('Failed to fetch dorms');
     } finally {
       setLoading(false);
     }
@@ -46,10 +49,10 @@ const AdminDorms = () => {
         price: dorm.price,
         beds: dorm.beds,
         block: dorm.block,
-        amenities: dorm.amenities.join(', '),
+        amenities: dorm.amenities.join(', '), // Convert array to comma-separated string
         isPopular: dorm.isPopular,
         rating: dorm.rating,
-        image: dorm.image || '',
+        images: calculateImages(dorm)
       });
     } else {
       setEditingDorm(null);
@@ -62,11 +65,22 @@ const AdminDorms = () => {
         amenities: '',
         isPopular: false,
         rating: '',
-        image: '',
+        images: [],
       });
     }
     setShowModal(true);
   };
+   
+
+   // Helper function to extract images from dorm object
+   const calculateImages = (dorm) => {
+      let imgs = [];
+      if(dorm.image) imgs.push(dorm.image);
+      if(dorm.images && dorm.images.length > 0) imgs = [...imgs, ...dorm.images];
+      // dedup
+      return [...new Set(imgs)];
+   }
+
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -95,19 +109,17 @@ const AdminDorms = () => {
     try {
       let response;
       if (editingDorm) {
-        response = await adminApi.updateDorm(editingDorm._id, dormData);
+        await adminApi.updateDorm(editingDorm._id, dormData);
       } else {
-        response = await adminApi.createDorm(dormData);
+        await adminApi.createDorm(dormData);
       }
-
-      if (response.success) {
-        alert(editingDorm ? 'Dorm updated successfully!' : 'Dorm created successfully!');
-        handleCloseModal();
-        fetchDorms();
-      }
+      
+      toast.success(editingDorm ? 'Dorm updated successfully!' : 'Dorm created successfully!');
+      handleCloseModal();
+      fetchDorms();
     } catch (error) {
       console.error('Error saving dorm:', error);
-      alert('Failed to save dorm');
+      toast.error('Failed to save dorm');
     }
   };
 
@@ -117,14 +129,12 @@ const AdminDorms = () => {
     }
 
     try {
-      const response = await adminApi.deleteDorm(id);
-      if (response.success) {
-        alert('Dorm deleted successfully!');
-        fetchDorms();
-      }
+      await adminApi.deleteDorm(id);
+      toast.success('Dorm deleted successfully!');
+      fetchDorms();
     } catch (error) {
       console.error('Error deleting dorm:', error);
-      alert('Failed to delete dorm');
+      toast.error('Failed to delete dorm');
     }
   };
 
@@ -302,29 +312,106 @@ const AdminDorms = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-                <input
-                  type="text"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleChange}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A90B8]"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Dorm Images (Max 5)</label>
+                <div className="space-y-4">
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={async (e) => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          if (files.length + formData.images.length > 5) {
+                            toast.info('You can only have up to 5 images total.');
+                            return;
+                          }
+
+                          const uploadData = new FormData();
+                          for (let i = 0; i < files.length; i++) {
+                            uploadData.append('images', files[i]);
+                          }
+                          
+                          try {
+                            const result = await adminApi.uploadDormImages(uploadData);
+                            if (result.success) {
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                images: [...prev.images, ...result.data.imagePaths] 
+                              }));
+                              toast.success('Images uploaded successfully!');
+                            }
+                          } catch (error) {
+                            console.error('Error uploading images:', error);
+                            toast.error('Failed to upload images');
+                          }
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A90B8]"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Supported formats: JPG, PNG, WEBP (Max 10MB per file). Select multiple files at once.</p>
+                  </div>
+                  
+                  {formData.images && formData.images.length > 0 && (
+                    <div className="grid grid-cols-5 gap-4">
+                      {formData.images.map((img, index) => (
+                        <div key={index} className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 relative group">
+                          <img 
+                            src={img.startsWith('http') ? img : `${API_CONFIG.BASE_URL.replace('/api', '')}${img}`} 
+                            alt={`Preview ${index + 1}`} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.src = 'https://via.placeholder.com/150?text=No+Image'; 
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ 
+                              ...prev, 
+                              images: prev.images.filter((_, i) => i !== index) 
+                            }))}
+                            className="absolute inset-0 bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                          >
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                          {index === 0 && (
+                             <span className="absolute bottom-0 left-0 right-0 bg-primary/80 text-white text-[10px] text-center py-0.5">Main</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amenities (comma-separated)
+                  Amenities
                 </label>
-                <input
-                  type="text"
-                  name="amenities"
-                  value={formData.amenities}
-                  onChange={handleChange}
-                  placeholder="WiFi, AC, Attached Bathroom"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A90B8]"
-                />
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {['WiFi', 'Air Conditioning', 'Parking', 'Laundry', 'Furnished', 'Kitchen', 'TV', 'Gym', 'Study Table', 'Attached Bathroom', 'Hot Water', 'Balcony', 'Security', 'CCTV', 'Wardrobe', 'Power Backup'].map((amenity) => (
+                    <label key={amenity} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        checked={formData.amenities.split(',').map(a => a.trim()).includes(amenity)}
+                        onChange={(e) => {
+                          const currentAmenities = formData.amenities ? formData.amenities.split(',').map(a => a.trim()).filter(Boolean) : [];
+                          let newAmenities;
+                          if (e.target.checked) {
+                            newAmenities = [...currentAmenities, amenity];
+                          } else {
+                            newAmenities = currentAmenities.filter(a => a !== amenity);
+                          }
+                          setFormData(prev => ({ ...prev, amenities: newAmenities.join(', ') }));
+                        }}
+                        className="w-4 h-4 text-[#4A90B8] border-gray-300 rounded focus:ring-[#4A90B8]"
+                      />
+                      <span className="text-gray-700">{amenity}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center">

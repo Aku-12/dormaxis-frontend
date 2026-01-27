@@ -108,41 +108,7 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <a
-            href="/admin/dorms"
-            className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-[#4A90B8] hover:bg-[#E8F3F8] transition-all group"
-          >
-            <div className="w-12 h-12 bg-[#E8F3F8] group-hover:bg-[#4A90B8] rounded-lg flex items-center justify-center transition-colors">
-              <svg className="w-6 h-6 text-[#4A90B8] group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Add New Dorm</h3>
-              <p className="text-sm text-gray-500">Create a new dorm listing</p>
-            </div>
-          </a>
 
-          <a
-            href="/admin/users"
-            className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-[#4A90B8] hover:bg-[#E8F3F8] transition-all group"
-          >
-            <div className="w-12 h-12 bg-[#E8F3F8] group-hover:bg-[#4A90B8] rounded-lg flex items-center justify-center transition-colors">
-              <svg className="w-6 h-6 text-[#4A90B8] group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Manage Users</h3>
-              <p className="text-sm text-gray-500">View and manage all users</p>
-            </div>
-          </a>
-        </div>
-      </div>
     </div>
   );
 };

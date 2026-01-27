@@ -1,28 +1,29 @@
 import React from 'react';
+import { FiSearch, FiZap, FiShield, FiDollarSign } from 'react-icons/fi';
 import FeatureCard from './FeatureCard';
 
 const features = [
   {
     id: 1,
-    icon: '🔍',
+    icon: FiSearch,
     title: 'Easy Search',
     description: 'Find dorms quickly with smart filters',
   },
   {
     id: 2,
-    icon: '⚡',
+    icon: FiZap,
     title: 'Instant Booking',
     description: 'Reserve your dorm in just one click',
   },
   {
     id: 3,
-    icon: '🔒',
+    icon: FiShield,
     title: 'Secure Payment',
     description: 'Save online transaction everytime',
   },
   {
     id: 4,
-    icon: '💰',
+    icon: FiDollarSign,
     title: 'Affordable Choices',
     description: 'Competitive pricing with no hidden fees. Find dorms that fit every budget',
   },

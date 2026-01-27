@@ -4,6 +4,7 @@ import { Header, Footer, Loading, ErrorMessage } from '../components/common';
 import useAuthStore from '../store/useAuthStore';
 import { bookingAPI, paymentAPI } from '../api';
 import { API_CONFIG } from '../config/api.config';
+import { useRecaptcha } from '../context/RecaptchaContext';
 
 // Helper function to get full image URL
 const getImageUrl = (imagePath) => {
@@ -108,6 +109,7 @@ const BookingPage = () => {
   const { dormId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
+  const { executeRecaptcha } = useRecaptcha();
 
   // State
   const [loading, setLoading] = useState(true);
@@ -269,6 +271,10 @@ const BookingPage = () => {
     try {
       setSubmitting(true);
       setError(null);
+
+      // Get reCAPTCHA token for bot protection
+      const recaptchaToken = await executeRecaptcha('booking');
+
       const bookingData = {
         dormId,
         ...formData,
@@ -277,10 +283,10 @@ const BookingPage = () => {
         totalAmount: pricing.totalAmount, // Ensure totalAmount is sent
         discount: pricing.discount // Send discount if applied
       };
-      
+
       // Use Stripe Checkout
-      const response = await paymentAPI.createStripeCheckoutSession(bookingData);
-      
+      const response = await paymentAPI.createStripeCheckoutSession(bookingData, recaptchaToken);
+
       if (response.success && response.url) {
         // Redirect to Stripe
         window.location.href = response.url;

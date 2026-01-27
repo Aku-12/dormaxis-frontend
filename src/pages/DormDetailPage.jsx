@@ -4,6 +4,7 @@ import { Header, Footer, Loading, useToast } from '../components/common';
 import useDormStore from '../store/useDormStore';
 import useAuthStore from '../store/useAuthStore';
 import { reviewsAPI } from '../api';
+import { sanitizeText } from '../utils/xssUtils';
 
 // Amenity icons mapping
 const amenityIcons = {
@@ -416,8 +417,8 @@ const DormDetailPage = () => {
               </h2>
               <p className="text-slate-600 leading-relaxed">
                 {showAllDescription 
-                  ? currentDorm.description 
-                  : currentDorm.description?.slice(0, 300) + (currentDorm.description?.length > 300 ? '...' : '')
+                  ? sanitizeText(currentDorm.description) 
+                  : sanitizeText(currentDorm.description?.slice(0, 300)) + (currentDorm.description?.length > 300 ? '...' : '')
                 }
               </p>
               {currentDorm.description?.length > 300 && (
@@ -515,7 +516,7 @@ const DormDetailPage = () => {
                             ))}
                           </div>
                         </div>
-                        <p className="text-slate-600 text-sm leading-relaxed">{review.comment}</p>
+                        <p className="text-slate-600 text-sm leading-relaxed">{sanitizeText(review.comment)}</p>
                       </div>
                     ))}
                   </div>

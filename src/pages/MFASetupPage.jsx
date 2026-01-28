@@ -235,7 +235,7 @@ If you lose access to your authenticator app, use one of these codes to log in.
 
         {/* Disable Modal */}
         {showDisableModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full p-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Disable Two-Factor Authentication</h3>
               <p className="text-gray-600 mb-6">
